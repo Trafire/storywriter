@@ -74,7 +74,7 @@ class TextWriter:
         return self._tokenizer(prompt, return_tensors="pt").to(self._device).input_ids, prompt, input_length
 
 if __name__ == '__main__':
-    writer = TextWriter()
+    writer = TextWriter('hg')
     print(writer.generate('<cheat> When Rachel', 200))
     print(writer.generate_story('<cheat> When Ellen', 200))
 
