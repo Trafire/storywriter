@@ -36,8 +36,9 @@ class TextWriter:
         self._model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-j-6B")
 
+
     def _get_model(self):
-        return GPTJForCausalLM.from_pretrained(self.path, revision="float16", low_cpu_mem_usage=True)
+        return GPTJForCausalLM.from_pretrained(self.path, low_cpu_mem_usage=True)
 
     def generate(self, prompt, additional):
         # prompt can only be 60% of the total length of the
@@ -71,3 +72,9 @@ class TextWriter:
             prompt = get_last_n_words(prompt, max_words)
             return self.get_input_ids(prompt, max_length)
         return self._tokenizer(prompt, return_tensors="pt").to(self._device).input_ids, prompt, input_length
+
+if __name__ == '__main__':
+    writer = TextWriter()
+    print(writer.generate('<cheat> When Rachel', 200))
+    print(writer.generate_story('<cheat> When Ellen', 200))
+
