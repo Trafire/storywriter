@@ -41,7 +41,7 @@ class TextWriter:
 
     def generate(self, prompt, additional):
         # prompt can only be 60% of the total length of the
-        input_ids, new_prompt, input_length = get_input_ids(prompt, self.MAX_PROMPT, tokenizer)
+        input_ids, new_prompt, input_length = self.get_input_ids(prompt, self.MAX_PROMPT)
         generated_ids = self._model.generate(input_ids, do_sample=True, temperature=0.9,
                                              max_length=input_length + additional)
         text = self._tokenizer.decode(generated_ids[0])
