@@ -81,14 +81,19 @@ class TextWriter:
 @click.option('--low-mem/--no-low-mem', default=False, help='Whether to run in low memory mode (must be false on TPU vm)')
 def main(model_name, low_mem):
 
-    url = f'http://35.223.44.38/prompt/next-prompt/?model_type={model_name}'
-    data = requests.get(url).json()
-    prompt_text = data["text"]
-    additional = data["max_length"]
+
     my_writer = TextWriter(f"hg_models/{model_name}", low_mem)
-    story_text = my_writer.generate_story(prompt_text,additional)
-    r = requests.post('http://35.223.44.38/generated-text/',data={"text": story_text, 'prompt': data['id']} )
-    print(r.status_code)
+
+    url = f'http://35.223.44.38/prompt/next-prompt/?model_type={model_name}'
+
+    for i in range(50):
+        data = requests.get(url).json()
+        prompt_text = data["text"]
+        additional = data["max_length"]
+
+        story_text = my_writer.generate_story(prompt_text,additional)
+        r = requests.post('http://35.223.44.38/generated-text/',data={"text": story_text, 'prompt': data['id']})
+        print(r.status_code)
 
 
 
