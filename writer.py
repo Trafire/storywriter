@@ -1,5 +1,7 @@
 import torch
 from transformers import GPTJForCausalLM, AutoTokenizer
+import click
+import requests as requests
 
 
 def total_words(prompt):
@@ -29,7 +31,8 @@ class TextWriter:
     MAX_ADDITIONAL = int(MAX_SIZE * .4)
     MAX_PROMPT = int(MAX_SIZE * .6)
 
-    def __init__(self, path):
+    def __init__(self, path, low_mem=True):
+        self.low_mem = low_mem
         self.path = path
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._model = self._get_model()
@@ -38,7 +41,7 @@ class TextWriter:
 
 
     def _get_model(self):
-        return GPTJForCausalLM.from_pretrained(self.path, low_cpu_mem_usage=True)
+        return GPTJForCausalLM.from_pretrained(self.path, low_cpu_mem_usage=self.low_mem)
 
     def generate(self, prompt, additional):
         # prompt can only be 60% of the total length of the
@@ -73,8 +76,23 @@ class TextWriter:
             return self.get_input_ids(prompt, max_length)
         return self._tokenizer(prompt, return_tensors="pt").to(self._device).input_ids, prompt, input_length
 
-if __name__ == '__main__':
-    writer = TextWriter('hg_full')
-    print(writer.generate('<cheat> When Rachel', 200))
-    print(writer.generate_story('<cheat> When Ellen', 200))
+@click.command()
+@click.option('--model-name', prompt='Name of the Model', help='Reference to local path at hg_models/')
+@click.option('--low-mem/--no-low-mem', default=False, help='Whether to run in low memory mode (must be false on TPU vm)')
+def main(model_name, low_mem):
 
+    url = f'http://35.223.44.38/prompt/next-prompt/?model_type={model_name}'
+    data = requests.get(url).json()
+    prompt_text = data["text"]
+    additional = data["max_length"]
+    my_writer = TextWriter(f"hg_models/{model_name}", low_mem)
+    story_text = my_writer.generate_story(prompt_text,additional)
+    r = requests.post('http://35.223.44.38/generated-text/',data={"text": story_text, 'prompt': data['id']} )
+    print(r.status_code)
+
+
+
+
+
+if __name__ == '__main__':
+    main()
