@@ -2,3 +2,5 @@ git+https://github.com/huggingface/transformers#transformers
 torch
 click
 requests
+random-word
+pyyaml

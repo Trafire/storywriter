@@ -1,6 +1,7 @@
 import click
 import requests as requests
 import torch
+from random_word import RandomWords
 from transformers import GPTJForCausalLM, AutoTokenizer
 
 
@@ -76,11 +77,12 @@ class TextWriter:
         return self._tokenizer(prompt, return_tensors="pt").to(self._device).input_ids, prompt, input_length
 
     def generate_new_story(self):
-        possible = self.generate("title:", 10)
+        rw = RandomWords().get_random_word()
+        possible = self.generate(f"title: {rw}".title(), 10)
         if "\n" in possible:
             url = 'http://35.223.44.38/story/'
             index = possible.index('\n') + 1
-            title = possible[len("title:"): index].strip()
+            title = possible[len("title:"): index].strip().title()
             r = requests.post(url, data={"title": title})
             if str(r.status_code)[0] == '2':
                 print("New Title Created:", title)
