@@ -59,7 +59,7 @@ class TextWriter:
 
     def generate_story(self, prompt, additional):
         while additional > self.MAX_ADDITIONAL + 10:
-            prompt = self.generate(self._model, additional=self.MAX_ADDITIONAL)
+            prompt = self.generate(prompt, additional=self.MAX_ADDITIONAL)
             additional -= self.MAX_ADDITIONAL
         prompt = self.generate(prompt, additional=additional)
         return prompt
