@@ -1,7 +1,7 @@
-import torch
-from transformers import GPTJForCausalLM, AutoTokenizer
 import click
 import requests as requests
+import torch
+from transformers import GPTJForCausalLM, AutoTokenizer
 
 
 def total_words(prompt):
@@ -39,7 +39,6 @@ class TextWriter:
         self._model.to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-j-6B")
 
-
     def _get_model(self):
         return GPTJForCausalLM.from_pretrained(self.path, low_cpu_mem_usage=self.low_mem)
 
@@ -76,27 +75,51 @@ class TextWriter:
             return self.get_input_ids(prompt, max_length)
         return self._tokenizer(prompt, return_tensors="pt").to(self._device).input_ids, prompt, input_length
 
+    def generate_new_story(self):
+        possible = self.generate("title:", 10)
+        if "\n" in possible:
+            url = 'http://35.223.44.38/story/'
+            index = possible.index('\n') + 1
+            title = possible[len("title:"): index].strip()
+            r = requests.post(url, data={"title": title})
+            if str(r.status_code)[0] == '2':
+                print("New Title Created:", title)
+            else:
+                print("New Title Failed:", title, r.status_code, r.reason)
+
+
 @click.command()
 @click.option('--model-name', prompt='Name of the Model', help='Reference to local path at hg_models/')
-@click.option('--low-mem/--no-low-mem', default=False, help='Whether to run in low memory mode (must be false on TPU vm)')
-def main(model_name, low_mem):
-
+@click.option('--low-mem/--no-low-mem', default=False,
+              help='Whether to run in low memory mode (must be false on TPU vm)')
+@click.option('--max-generated', default=10,
+              help='Interger stops generation if there are already this many prompts')
+def main(model_name, low_mem, max_generated):
+    url = f'http://35.223.44.38/prompt/next-prompt/?model_type={model_name}'
+    data = requests.get(url).json()
+    generated = data["generated"]
+    prompt_text = data["text"]
+    additional = data["max_length"]
+    # Loading the model is expensive so this short circuits if there is nothing to generate
+    if generated > max_generated:
+        if model_name != 'plot_summary':
+            return None
 
     my_writer = TextWriter(f"hg_models/{model_name}", low_mem)
 
-    url = f'http://35.223.44.38/prompt/next-prompt/?model_type={model_name}'
-
     for i in range(50):
+        story_text = my_writer.generate_story(prompt_text, additional)
+        requests.post('http://35.223.44.38/generated-text/', data={"text": story_text, 'prompt': data['id']})
         data = requests.get(url).json()
+        generated = data["generated"]
         prompt_text = data["text"]
         additional = data["max_length"]
 
-        story_text = my_writer.generate_story(prompt_text,additional)
-        r = requests.post('http://35.223.44.38/generated-text/',data={"text": story_text, 'prompt': data['id']})
-        print(r.status_code)
-
-
-
+        if generated > max_generated:
+            if model_name == 'plot_summary':
+                my_writer.generate_new_story()
+            else:
+                return None
 
 
 if __name__ == '__main__':

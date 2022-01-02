@@ -1,8 +1,13 @@
 #!/bin/bash
 cd ~/storywriter/
 git pull
-if [ ! -d ~/storywriter/ ]; then
+if [ ! -d ~/storywriter/hg_models/ ]; then
     gsutil -m cp -r  gs://ks-story-ew4-storage/hg_models/ .
 fi
 
-python3 writer.py --model-name plot_summary
+while true
+do
+	python3 writer.py --model-name plot_summary
+	python3 writer.py --model-name default
+done
+
