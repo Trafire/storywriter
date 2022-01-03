@@ -65,7 +65,7 @@ class TextWriter:
         return prompt
 
     def estimate_input_length(self, prompt):
-        return len(prompt) // 4
+        return len(prompt) // 3
 
     def get_input_ids(self, prompt, max_length):
         input_length = self.estimate_input_length(prompt)
